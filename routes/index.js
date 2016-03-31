@@ -11,12 +11,12 @@ var channelObject = {};
 channelObject = updateLogfiles();
 
 // Timer to update the function above in runtime
-setInterval(function(){
+setInterval(function() {
     channelObject = updateLogfiles();
-// Reloop every hour
-}, 1 * 60 * 60 * 1000);  
+    // Reloop every hour
+}, 1 * 60 * 60 * 1000);
 
- 
+
 /* 
  * Routes
  */
@@ -42,7 +42,7 @@ router.get('/', function(req, res) {
     // Display found elements
     console.log('Found ' + channelArray.length + ' channels');
 
-    res.render('index', { 
+    res.render('index', {
         title: 'Index',
         active_index: true,
         arrayObject: arrayObject
@@ -75,7 +75,7 @@ router.get('/c/:channel/:date?', function(req, res) {
     console.log('Found ' + dateArray.length + ' possible dates');
 
     if (!req.params.date) {
-        res.render('channel', { 
+        res.render('channel', {
             title: 'Channel: ' + req.params.channel,
             active_index: true,
             channel: req.params.channel,
@@ -88,11 +88,11 @@ router.get('/c/:channel/:date?', function(req, res) {
             messageObject = [];
 
         // For each line, push to messageObject
-        for(i in array) {
+        for (i in array) {
             messageObject.push(array[i]);
         }
 
-        res.render('channel', { 
+        res.render('channel', {
             title: 'Channel: ' + req.params.channel + ' - ' + req.params.date,
             active_index: true,
             channel: req.params.channel,
@@ -108,7 +108,7 @@ router.get('/c/:channel/:date?', function(req, res) {
  */
 
 // Function to construct channelArray
-function constructChannelArray(channelObject, activeChannel){
+function constructChannelArray(channelObject, activeChannel) {
     // Init temporary channel array
     var channelArray = [];
 
@@ -133,7 +133,7 @@ function constructChannelArray(channelObject, activeChannel){
 }
 
 // Function to update the logfiles
-function updateLogfiles(){
+function updateLogfiles() {
     // Init channelObject element
     var channelObject = {};
 
@@ -141,48 +141,37 @@ function updateLogfiles(){
     var channels = fs.readdirSync(getZncBasePath(settings));
 
     // For each log file
-    channels.forEach(function(filename){
-        console.log('processing ' + filename);
-        
-        var logs = fs.readdirSync(getZncBasePath(settings) + filename);
-        
-        logs.forEach(function(logName)
-        {           
-           if(logName.match(/^#.*$/))
-           {
-              console.log('analyzing ' + logName);
-              
-           }            
-        });
-        
-        // // Split filenames based on a pattern like <network>_<channel>_<date>
-        //  var splitPattern = '^' + settings.network + '_(.*)_([0-9]*).log$',
-        //      splitRegex = new RegExp(splitPattern, 'g'),
-        //      splitMatch = splitRegex.exec(filename);
+    channels.forEach(function(channelName) {
 
-        // // If we have a match, proceed to add to arrays
-        // if (splitMatch) {
-        //     // Remove non-channels (queries) from channel list
-        //     var channelMatches = splitMatch[1].match(/^#.*$/);
-        //     if (channelMatches) {
-        //         // Remove hash character in front of channel name
-        //         var channelMatchResult = channelMatches[0].substring(1);
+        if (channelName.match(/^#.*$/)) {
 
-        //         // If we didnt already initiated channelObject.test-channel initiate it
-        //         if (!channelObject[channelMatchResult]) {
-        //             channelObject[channelMatchResult] = [];
-        //         } 
+            //console.log('processing ' + channelName);
 
-        //         // Turn date into correct format for datepicker
-        //         var dateRegex = /^([0-9]{4})([0-9]{2})([0-9]{2})$/g,
-        //             dateMatch = dateRegex.exec(splitMatch[2]);
-        //         if (dateMatch) {
-        //             var possibleDate = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3];
-        //             // Push into channelObject.test-channel
-        //             channelObject[channelMatchResult].push(possibleDate);
-        //         } 
-        //     }
-        // } 
+            var logs = fs.readdirSync(getZncBasePath(settings) + '/' + channelName);
+
+            //console.log(logs);
+
+            var cleanChannel = channelName.substring(1);
+
+            // If we didnt already initiated channelObject.test-channel initiate it
+            if (!channelObject[cleanChannel]) {
+                channelObject[cleanChannel] = [];
+            }
+
+            logs.forEach(function(logName) {
+                //console.log('analyzing ' + logName);
+
+                var dateRegex = /^([0-9]{4})-([0-9]{2})-([0-9]{2})\.log$/g,
+                    dateMatch = dateRegex.exec(logName);
+                // only first one works?
+                if (dateMatch) {
+                    var possibleDate = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3];
+                    // Push into channelObject.test-channel
+                    channelObject[cleanChannel].push(possibleDate);
+                    //console.log('channelObject[' + cleanChannel + '].push(' + possibleDate + ')');
+                }
+            });
+        }
     });
 
     // Display total amount of channels
@@ -192,20 +181,17 @@ function updateLogfiles(){
     for (var channel in channelObject) {
         console.log(channel + ': ' + channel.length + ' possible dates');
     }
-
+    //console.log(channelObject);
     return channelObject;
 }
 
-function getZncBasePath(settings)
-{
-    if(settings.networkModule)
-    {
-        return settings.zncpath + '/users/' + settings.user + '/networks/' + settings.network + '/moddata/log/';
+function getZncBasePath(settings) {
+    if (settings.networkModule) {
+        return settings.zncpath + '/users/' + settings.user + '/networks/' + settings.network + '/moddata/log';
     }
-    else
-    {    
-        return settings.zncpath + '/users/' + settings.user + '/moddata/log/';
-    }   
+    else {
+        return settings.zncpath + '/users/' + settings.user + '/moddata/log';
+    }
 }
 
 module.exports = router;
