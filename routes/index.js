@@ -84,7 +84,7 @@ router.get('/c/:channel/:date?', function(req, res) {
     } else {
         /* Read actual logfile to render */
 
-        var array = fs.readFileSync(settings.zncpath + '/users/' + settings.user + '/moddata/log/' + settings.network + '_#' + req.params.channel + '_' + req.params.date + '.log').toString().split("\n"),
+        var array = fs.readFileSync(getZncBasePath(settings) + '/#' + req.params.channel + '/' + req.params.date + '.log').toString().split("\n"),
             messageObject = [];
 
         // For each line, push to messageObject
@@ -138,38 +138,51 @@ function updateLogfiles(){
     var channelObject = {};
 
     // Read all files in log file path
-    var files = fs.readdirSync(settings.zncpath + '/users/' + settings.user + '/moddata/log/');
+    var channels = fs.readdirSync(getZncBasePath(settings));
 
     // For each log file
-    files.forEach(function(filename){
-        // Split filenames based on a pattern like <network>_<channel>_<date>
-        var splitPattern = '^' + settings.network + '_(.*)_([0-9]*).log$',
-            splitRegex = new RegExp(splitPattern, 'g'),
-            splitMatch = splitRegex.exec(filename);
+    channels.forEach(function(filename){
+        console.log('processing ' + filename);
+        
+        var logs = fs.readdirSync(getZncBasePath(settings) + filename);
+        
+        logs.forEach(function(logName)
+        {           
+           if(logName.match(/^#.*$/))
+           {
+              console.log('analyzing ' + logName);
+              
+           }            
+        });
+        
+        // // Split filenames based on a pattern like <network>_<channel>_<date>
+        //  var splitPattern = '^' + settings.network + '_(.*)_([0-9]*).log$',
+        //      splitRegex = new RegExp(splitPattern, 'g'),
+        //      splitMatch = splitRegex.exec(filename);
 
-        // If we have a match, proceed to add to arrays
-        if (splitMatch) {
-            // Remove non-channels (queries) from channel list
-            var channelMatches = splitMatch[1].match(/^#.*$/);
-            if (channelMatches) {
-                // Remove hash character in front of channel name
-                var channelMatchResult = channelMatches[0].substring(1);
+        // // If we have a match, proceed to add to arrays
+        // if (splitMatch) {
+        //     // Remove non-channels (queries) from channel list
+        //     var channelMatches = splitMatch[1].match(/^#.*$/);
+        //     if (channelMatches) {
+        //         // Remove hash character in front of channel name
+        //         var channelMatchResult = channelMatches[0].substring(1);
 
-                // If we didnt already initiated channelObject.test-channel initiate it
-                if (!channelObject[channelMatchResult]) {
-                    channelObject[channelMatchResult] = [];
-                } 
+        //         // If we didnt already initiated channelObject.test-channel initiate it
+        //         if (!channelObject[channelMatchResult]) {
+        //             channelObject[channelMatchResult] = [];
+        //         } 
 
-                // Turn date into correct format for datepicker
-                var dateRegex = /^([0-9]{4})([0-9]{2})([0-9]{2})$/g,
-                    dateMatch = dateRegex.exec(splitMatch[2]);
-                if (dateMatch) {
-                    var possibleDate = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3];
-                    // Push into channelObject.test-channel
-                    channelObject[channelMatchResult].push(possibleDate);
-                } 
-            }
-        } 
+        //         // Turn date into correct format for datepicker
+        //         var dateRegex = /^([0-9]{4})([0-9]{2})([0-9]{2})$/g,
+        //             dateMatch = dateRegex.exec(splitMatch[2]);
+        //         if (dateMatch) {
+        //             var possibleDate = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3];
+        //             // Push into channelObject.test-channel
+        //             channelObject[channelMatchResult].push(possibleDate);
+        //         } 
+        //     }
+        // } 
     });
 
     // Display total amount of channels
@@ -181,6 +194,18 @@ function updateLogfiles(){
     }
 
     return channelObject;
+}
+
+function getZncBasePath(settings)
+{
+    if(settings.networkModule)
+    {
+        return settings.zncpath + '/users/' + settings.user + '/networks/' + settings.network + '/moddata/log/';
+    }
+    else
+    {    
+        return settings.zncpath + '/users/' + settings.user + '/moddata/log/';
+    }   
 }
 
 module.exports = router;
